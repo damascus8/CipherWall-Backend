@@ -37,3 +37,8 @@ app.get("/api/fetch/:id", async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+
+app.get("/", (req, res) => {
+  res.send("✅ CipherWall Backend is running.");
+});
