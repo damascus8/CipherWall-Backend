@@ -15,7 +15,7 @@ client.connect().then(() => {
   console.log("✅ Connected to MongoDB");
 });
 
-// Save encrypted message
+// Save encrypted/plaintext message
 app.post("/api/save", async (req, res) => {
   const { encrypted, type, payload } = req.body;
   if (!payload) return res.status(400).json({ error: "No payload provided" });
@@ -35,10 +35,10 @@ app.get("/api/fetch/:id", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
-
-
+// Render test route
 app.get("/", (req, res) => {
   res.send("✅ CipherWall Backend is running.");
 });
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
