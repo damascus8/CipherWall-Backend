@@ -73,3 +73,20 @@ app.get("/", (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
+
+// Password verification route
+app.post("/api/verify", async (req, res) => {
+  const { id, password } = req.body;
+  if (!id || !password) return res.status(400).json({ error: "Missing parameters" });
+
+  try {
+    const doc = await db.findOne({ _id: new ObjectId(id) });
+    if (!doc || !doc.password) return res.status(404).json({ error: "Not found or no password" });
+
+    const match = await bcrypt.compare(password, doc.password);
+    res.json({ match });
+  } catch {
+    res.status(400).json({ error: "Invalid ID" });
+  }
+});
