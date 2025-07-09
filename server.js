@@ -20,13 +20,38 @@ client.connect().then(() => {
 });
 
 // Save encrypted/plaintext message
+// app.post("/api/save", async (req, res) => {
+//   const { encrypted, type, payload } = req.body;
+//   if (!payload) return res.status(400).json({ error: "No payload provided" });
+
+//   const result = await db.insertOne({ encrypted, type, payload, createdAt: new Date() });
+//   res.json({ id: result.insertedId });
+// });
+
 app.post("/api/save", async (req, res) => {
-  const { encrypted, type, payload } = req.body;
+  const { encrypted, type, payload, key } = req.body;
+
   if (!payload) return res.status(400).json({ error: "No payload provided" });
 
-  const result = await db.insertOne({ encrypted, type, payload, createdAt: new Date() });
+  let hashedKey = null;
+  if (key) {
+    const saltRounds = 10;
+    hashedKey = await bcrypt.hash(key, saltRounds);
+  }
+
+  const result = await db.insertOne({
+    encrypted,
+    type,
+    payload,
+    key: hashedKey, // Optional: saved hashed
+    createdAt: new Date(),
+  });
+
   res.json({ id: result.insertedId });
 });
+
+
+
 
 // Fetch message by ID
 app.get("/api/fetch/:id", async (req, res) => {
