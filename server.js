@@ -66,20 +66,31 @@ app.get("/api/fetch/:id", async (req, res) => {
 
 // ✅ Backend Decryption Route
 app.post("/api/decrypt", async (req, res) => {
-  const { payload, key, type } = req.body;
+  const { id, key } = req.body;
+
+  if (!id || !key) {
+    return res.status(400).json({ error: "Missing ID or key" });
+  }
 
   try {
-    if (!payload || !key || !type) {
-      return res.status(400).json({ error: "Missing parameters" });
+    const doc = await db.findOne({ _id: new ObjectId(id) });
+
+    if (!doc) return res.status(404).json({ error: "Message not found" });
+
+    // Compare key if encrypted
+    if (doc.encrypted && doc.key) {
+      const isMatch = await bcrypt.compare(key, doc.key);
+      if (!isMatch) return res.status(403).json({ error: "Incorrect key" });
     }
 
+    // Decrypt message
     let decrypted = "";
 
-    if (type === "aes") {
-      const bytes = CryptoJS.AES.decrypt(payload, key);
+    if (doc.type === "aes") {
+      const bytes = CryptoJS.AES.decrypt(doc.payload, key);
       decrypted = bytes.toString(CryptoJS.enc.Utf8);
-    } else if (type === "caesar") {
-      decrypted = caesarDecrypt(payload, parseInt(key));
+    } else if (doc.type === "caesar") {
+      decrypted = caesarDecrypt(doc.payload, parseInt(key));
     } else {
       return res.status(400).json({ error: "Unsupported decryption type" });
     }
@@ -89,9 +100,12 @@ app.post("/api/decrypt", async (req, res) => {
     res.json({ decrypted });
   } catch (err) {
     console.error("❌ Backend decryption error:", err.message);
-    res.status(400).json({ error: "Invalid key or corrupted data" });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
+
+
+
 
 function caesarDecrypt(str, shift) {
   return str
