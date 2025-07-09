@@ -3,7 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const CryptoJS = require("crypto-js");
-
+const bcrypt = require("bcrypt");
 const app = express();
 app.use(cors());
 app.use(express.json());
