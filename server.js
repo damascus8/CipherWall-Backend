@@ -43,33 +43,29 @@ app.post("/api/save", async (req, res) => {
   res.json({ id: result.insertedId });
 });
 
-// Fetch message by ID (and check expiry)
+
+// Fetch message by ID with expiry logic
 app.get("/api/fetch/:id", async (req, res) => {
   try {
     const doc = await db.findOne({ _id: new ObjectId(req.params.id) });
+    if (!doc) return res.status(404).json({ error: "Message not found" });
 
-    if (!doc) return res.status(404).json({ error: "Not found" });
+    const expiryMinutes = 10;
+    const now = new Date();
+    const created = new Date(doc.createdAt);
+    const diffInMinutes = (now - created) / (1000 * 60);
 
-    // ⛔ Auto-expiry logic
-    if (doc.expiresAt && new Date() > new Date(doc.expiresAt)) {
-      return res.status(410).json({ error: "Message expired" });
+    if (diffInMinutes > expiryMinutes) {
+      await db.deleteOne({ _id: new ObjectId(req.params.id) });
+      return res.status(410).json({ error: "⏳ Message expired and removed" });
     }
 
-    res.json({
-      encrypted: doc.encrypted,
-      type: doc.type,
-      payload: doc.payload,
-      password: !!doc.password // just indicate if password protected
-    });
+    res.json(doc);
   } catch {
-    res.status(400).json({ error: "Invalid ID" });
+    res.status(400).json({ error: "Invalid ID format" });
   }
 });
 
-// Home route
-app.get("/", (req, res) => {
-  res.send("✅ CipherWall Backend is running.");
-});
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
