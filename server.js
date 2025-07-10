@@ -4,6 +4,7 @@ const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const CryptoJS = require("crypto-js");
 const bcrypt = require("bcrypt");
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -11,49 +12,34 @@ app.use(express.json());
 const client = new MongoClient(process.env.MONGO_URI);
 let db;
 
-// Connect to DB and ensure TTL index
 client.connect().then(() => {
   const collection = client.db("cipherwall").collection("messages");
   db = collection;
-  collection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 }); // ⏳ 1 hr TTL
+  collection.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 });
   console.log("✅ Connected to MongoDB");
 });
 
-// Save encrypted/plaintext message
-// app.post("/api/save", async (req, res) => {
-//   const { encrypted, type, payload } = req.body;
-//   if (!payload) return res.status(400).json({ error: "No payload provided" });
-
-//   const result = await db.insertOne({ encrypted, type, payload, createdAt: new Date() });
-//   res.json({ id: result.insertedId });
-// });
-
+// ✅ Save encrypted/plaintext message with optional key hashing
 app.post("/api/save", async (req, res) => {
   const { encrypted, type, payload, key } = req.body;
-
-  if (!payload) return res.status(400).json({ error: "No payload provided" });
+  if (!payload) return res.status(400).json({ error: "No payload." });
 
   let hashedKey = null;
-  if (key) {
-    const saltRounds = 10;
-    hashedKey = await bcrypt.hash(key, saltRounds);
+  if (key && (type === "aes" || type === "caesar")) {
+    hashedKey = await bcrypt.hash(key, 10);
   }
 
   const result = await db.insertOne({
     encrypted,
     type,
     payload,
-    key: hashedKey, // Optional: saved hashed
+    key: hashedKey,
     createdAt: new Date(),
   });
-
   res.json({ id: result.insertedId });
 });
 
-
-
-
-// Fetch message by ID
+// ✅ Fetch by ID
 app.get("/api/fetch/:id", async (req, res) => {
   try {
     const doc = await db.findOne({ _id: new ObjectId(req.params.id) });
@@ -64,71 +50,45 @@ app.get("/api/fetch/:id", async (req, res) => {
   }
 });
 
-// ✅ Backend Decryption Route
+// ✅ Backend decryption route (supports AES & Caesar)
 app.post("/api/decrypt", async (req, res) => {
   const { id, key } = req.body;
-
-  if (!id || !key) {
-    return res.status(400).json({ error: "Missing ID or key" });
-  }
+  if (!id || !key) return res.status(400).json({ error: "Missing ID/key." });
 
   try {
     const doc = await db.findOne({ _id: new ObjectId(id) });
+    if (!doc) return res.status(404).json({ error: "Not found" });
 
-    if (!doc) return res.status(404).json({ error: "Message not found" });
-
-    // Compare key if encrypted
     if (doc.encrypted && doc.key) {
-      const isMatch = await bcrypt.compare(key, doc.key);
-      if (!isMatch) return res.status(403).json({ error: "Incorrect key" });
+      const match = await bcrypt.compare(key, doc.key);
+      if (!match) return res.status(403).json({ error: "Wrong key." });
     }
 
-    // Decrypt message
     let decrypted = "";
-
     if (doc.type === "aes") {
       const bytes = CryptoJS.AES.decrypt(doc.payload, key);
       decrypted = bytes.toString(CryptoJS.enc.Utf8);
     } else if (doc.type === "caesar") {
-      decrypted = caesarDecrypt(doc.payload, parseInt(key));
+      decrypted = doc.payload
+        .split("")
+        .map(c => {
+          const base = c === c.toLowerCase() ? 97 : 65;
+          return String.fromCharCode((c.charCodeAt(0) - base - parseInt(key) + 26) % 26 + base);
+        })
+        .join("");
     } else {
-      return res.status(400).json({ error: "Unsupported decryption type" });
+      return res.status(400).json({ error: "Unsupported type." });
     }
 
-    if (!decrypted) throw new Error("Failed to decrypt");
-
+    if (!decrypted) throw new Error("Decrypt failed");
     res.json({ decrypted });
-  } catch (err) {
-    console.error("❌ Backend decryption error:", err.message);
-    res.status(500).json({ error: "Internal server error" });
+
+  } catch (e) {
+    console.error("Decryption error:", e.message);
+    res.status(500).json({ error: e.message });
   }
 });
 
-
-
-
-function caesarDecrypt(str, shift) {
-  return str
-    .split("")
-    .map((char) => {
-      if (char.match(/[a-z]/)) {
-        return String.fromCharCode(
-          ((char.charCodeAt(0) - 97 - shift + 26) % 26) + 97
-        );
-      } else if (char.match(/[A-Z]/)) {
-        return String.fromCharCode(
-          ((char.charCodeAt(0) - 65 - shift + 26) % 26) + 65
-        );
-      }
-      return char;
-    })
-    .join("");
-}
-
-// Default homepage route
-app.get("/", (req, res) => {
-  res.send("✅ CipherWall Backend is running.");
-});
-
+app.get("/", (req, res) => res.send("✅ CipherWall Backend is running."));
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server on port ${PORT}`));
