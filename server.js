@@ -171,15 +171,28 @@ app.post("/api/decrypt", async (req, res) => {
     }
     // Caesar decryption
     else if (doc.type === "caesar") {
-      const shift = parseInt(key);
-      decrypted = doc.payload
-        .split("")
-        .map(c => {
-          const base = c >= "a" && c <= "z" ? 97 : 65;
-          return String.fromCharCode((c.charCodeAt(0) - base - shift + 26) % 26 + base);
-        })
-        .join("");
-    }
+
+
+      // const shift = parseInt(key);
+      // decrypted = doc.payload
+      //   .split("")
+      //   .map(c => {
+      //     const base = c >= "a" && c <= "z" ? 97 : 65;
+      //     return String.fromCharCode((c.charCodeAt(0) - base - shift + 26) % 26 + base);
+      //   })
+      //   .join("");
+    
+
+  try {
+    const decrypted = caesarDecrypt(payload, key);
+    return res.json({ decrypted });
+  } catch (err) {
+    return res.status(500).json({ error: "Failed to decrypt using Caesar Cipher" });
+  }
+
+
+    
+      }
     // Other cipher types not supported here
     else {
       return res.status(400).json({ error: "Unsupported cipher type." });
@@ -197,3 +210,18 @@ app.post("/api/decrypt", async (req, res) => {
 app.get("/", (_, res) => res.send("✅ CipherWall backend is running."));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Listening on port ${PORT}`));
+
+
+// ✅ Caesar Cipher Decryption (fixes space/digit issues)
+function caesarDecrypt(text, key) {
+  const shift = parseInt(key, 10) % 26;
+  return text.split('').map(char => {
+    if (char >= 'A' && char <= 'Z') {
+      return String.fromCharCode(((char.charCodeAt(0) - 65 - shift + 26) % 26) + 65);
+    }
+    if (char >= 'a' && char <= 'z') {
+      return String.fromCharCode(((char.charCodeAt(0) - 97 - shift + 26) % 26) + 97);
+    }
+    return char; // ✅ Keep symbols, digits, punctuation, and space
+  }).join('');
+}
