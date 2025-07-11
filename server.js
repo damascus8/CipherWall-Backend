@@ -123,32 +123,29 @@ app.get("/", (_, res) => res.send("✅ CipherWall backend is running."));
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Listening on port ${PORT}`));
 
-//new added
-app.get("/api/message/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const record = await db.collection("messages").findOne({ _id: new ObjectId(id) });
-    if (!record) return res.status(404).json({ error: "Message not found" });
 
-    res.json({ payload: record.payload, type: record.type });
-  } catch (err) {
-    res.status(500).json({ error: "Failed to retrieve message" });
-  }
-});
+// app.get("/api/message/:id", async (req, res) => {
+//   const { id } = req.params;
+//   try {
+//     const record = await db.collection("messages").findOne({ _id: new ObjectId(id) });
+//     console.log("record"+record);
+//     if (!record) return res.status(404).json({ error: "Message not found" });
+
+//     res.json({ payload: record.payload, type: record.type });
+//   } catch (err) {
+//     res.status(500).json({ error: "Failed to retrieve message" });
+//   }
+// });
 //
 
-// // ✅ Caesar Cipher Decryption (fixes space/digit issues)
-// function caesarDecrypt(text, key) {
-//   console.log(text);
-//   console.log(key);
-//   const shift = parseInt(key, 10) % 26;
-//   return text.split('').map(char => {
-//     if (char >= 'A' && char <= 'Z') {
-//       return String.fromCharCode(((char.charCodeAt(0) - 65 - shift + 26) % 26) + 65);
-//     }
-//     if (char >= 'a' && char <= 'z') {
-//       return String.fromCharCode(((char.charCodeAt(0) - 97 - shift + 26) % 26) + 97);
-//     }
-//     return char; // ✅ Keep symbols, digits, punctuation, and space
-//   }).join('');
-// }
+
+// Fetch endpoint – returns doc
+app.get("/api/message/:id", async (req, res) => {
+  try {
+    const doc = await db.findOne({ _id: new ObjectId(req.params.id) });
+    if (!doc) return res.status(404).json({ error: "Not found." });
+    res.json(doc);
+  } catch {
+    res.status(400).json({ error: "Invalid ID." });
+  }
+});
