@@ -153,10 +153,11 @@ app.get("/api/message/:id", async (req, res) => {
 /////////////////////////////////
 // image upload
 
-
+/**
 const multer = require("multer");
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
 
 // 🔐 Save Encrypted Image
 app.post("/api/upload-image", upload.single("image"), async (req, res) => {
@@ -210,4 +211,42 @@ app.post("/api/decrypt-image", async (req, res) => {
     console.error("Decrypt image error:", err.message);
     res.status(500).json({ error: "Failed to decrypt image." });
   }
+});
+
+ */
+
+// ✅ Save encrypted image (with optional password)
+app.post("/api/image/upload", async (req, res) => {
+  const { imageData, key } = req.body;
+  if (!imageData) return res.status(400).json({ error: "Missing image data" });
+
+  let hashedKey = null;
+  if (key) {
+    hashedKey = await bcrypt.hash(key, 10);
+  }
+
+  const result = await db.insertOne({
+    type: "image",
+    payload: imageData,
+    key: hashedKey,
+    createdAt: new Date(),
+  });
+
+  res.json({ id: result.insertedId });
+});
+
+// ✅ Decrypt image by ID + key
+app.post("/api/image/decrypt", async (req, res) => {
+  const { id, key } = req.body;
+  if (!id) return res.status(400).json({ error: "Missing ID" });
+
+  const doc = await db.findOne({ _id: new ObjectId(id), type: "image" });
+  if (!doc) return res.status(404).json({ error: "Image not found" });
+
+  if (doc.key) {
+    const match = await bcrypt.compare(key || "", doc.key);
+    if (!match) return res.status(403).json({ error: "Incorrect key" });
+  }
+
+  res.json({ decrypted: doc.payload });
 });
