@@ -150,103 +150,55 @@ app.get("/api/message/:id", async (req, res) => {
   }
 });
 
-/////////////////////////////////
-// image upload
-
-/**
-const multer = require("multer");
-const storage = multer.memoryStorage();
-const upload = multer({ storage });
 
 
-// 🔐 Save Encrypted Image
-app.post("/api/upload-image", upload.single("image"), async (req, res) => {
-  const { key } = req.body;
-  const imageBuffer = req.file?.buffer;
-
-  if (!key || !imageBuffer) {
-    return res.status(400).json({ error: "Missing key or image." });
-  }
-
-  try {
-    const encrypted = CryptoJS.AES.encrypt(
-      imageBuffer.toString("base64"), // Encrypt as base64 string
-      key
-    ).toString();
-
-    const result = await db.insertOne({
-      type: "image",
-      encrypted: true,
-      payload: encrypted,
-      createdAt: new Date(),
-    });
-
-    res.json({ id: result.insertedId });
-  } catch (err) {
-    console.error("Image upload error:", err.message);
-    res.status(500).json({ error: "Failed to encrypt image." });
-  }
+// Mongo Schema
+const ImageSchema = new mongoose.Schema({
+  encryptedData: Buffer,
+  iv: [Number],
+  createdAt: { type: Date, default: Date.now }
 });
+const EncryptedImage = mongoose.model('EncryptedImage', ImageSchema);
 
-
-
-app.post("/api/decrypt-image", async (req, res) => {
-  const { id, key } = req.body;
-  if (!id || !key) return res.status(400).json({ error: "Missing id or key." });
-
-  try {
-    const doc = await db.findOne({ _id: new ObjectId(id) });
-    if (!doc || doc.type !== "image") {
-      return res.status(404).json({ error: "Image not found." });
-    }
-
-    const bytes = CryptoJS.AES.decrypt(doc.payload, key);
-    const base64 = bytes.toString(CryptoJS.enc.Utf8);
-    if (!base64) throw new Error("Incorrect key");
-
-    const buffer = Buffer.from(base64, "base64");
-    res.setHeader("Content-Type", "image/png"); // or jpeg
-    res.send(buffer);
-  } catch (err) {
-    console.error("Decrypt image error:", err.message);
-    res.status(500).json({ error: "Failed to decrypt image." });
-  }
-});
-
- */
-
-// ✅ Save encrypted image (with optional password)
-app.post("/api/image/upload", async (req, res) => {
-  const { imageData, key } = req.body;
-  if (!imageData) return res.status(400).json({ error: "Missing image data" });
-
-  let hashedKey = null;
-  if (key) {
-    hashedKey = await bcrypt.hash(key, 10);
-  }
-
-  const result = await db.insertOne({
-    type: "image",
-    payload: imageData,
-    key: hashedKey,
-    createdAt: new Date(),
+// Upload endpoint
+app.post('/api/upload-image', async (req, res) => {
+  const { data, password } = req.body;
+  const buffer = Buffer.from(data.encrypted);
+  const newImg = new EncryptedImage({
+    encryptedData: buffer,
+    iv: data.iv
   });
-
-  res.json({ id: result.insertedId });
+  await newImg.save();
+  res.json({ success: true, id: newImg._id });
 });
 
-// ✅ Decrypt image by ID + key
-app.post("/api/image/decrypt", async (req, res) => {
-  const { id, key } = req.body;
-  if (!id) return res.status(400).json({ error: "Missing ID" });
+// View/decrypt endpoint
+app.post('/api/view-image', async (req, res) => {
+  const { id, password } = req.body;
+  const record = await EncryptedImage.findById(id);
+  if (!record) return res.status(404).send('Not found');
 
-  const doc = await db.findOne({ _id: new ObjectId(id), type: "image" });
-  if (!doc) return res.status(404).json({ error: "Image not found" });
+  try {
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(password),
+      { name: "AES-GCM" },
+      false,
+      ["decrypt"]
+    );
 
-  if (doc.key) {
-    const match = await bcrypt.compare(key || "", doc.key);
-    if (!match) return res.status(403).json({ error: "Incorrect key" });
+    const decrypted = await crypto.subtle.decrypt(
+      {
+        name: "AES-GCM",
+        iv: new Uint8Array(record.iv)
+      },
+      key,
+      record.encryptedData.buffer
+    );
+
+    res.set('Content-Type', 'image/jpeg'); // or png if png uploaded
+    res.send(Buffer.from(decrypted));
+  } catch (e) {
+    res.status(401).send("Decryption failed");
   }
-
-  res.json({ decrypted: doc.payload });
 });
