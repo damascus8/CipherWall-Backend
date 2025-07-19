@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-const mongoose = require("mongoose");
+
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const CryptoJS = require("crypto-js");
@@ -142,6 +142,7 @@ app.get("/api/message/:id", async (req, res) => {
 
 
 // ------------------- Image Encryption Dependencies -------------------
+const mongoose = require("mongoose");
 const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
