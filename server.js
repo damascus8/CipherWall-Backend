@@ -140,7 +140,7 @@ app.get("/api/message/:id", async (req, res) => {
 ////////////////////////////adding file code
 
 
-
+/*
 // ------------------- Image Encryption Dependencies -------------------
 const mongoose = require("mongoose");
 const crypto = require('crypto');
@@ -200,3 +200,4 @@ app.get('/api/decrypt-image/:id', async (req, res) => {
   res.contentType('image/png');
   res.send(decrypted);
 });
+ */
