@@ -161,14 +161,18 @@ const EncryptedImage = mongoose.model('EncryptedImage', ImageSchema);
 
 // ------------------- Image Encryption API -------------------
 app.post('/api/encrypt-image', upload.single('image'), async (req, res) => {
+  console.info("into encryptimg api 1");
+  console.info("AVC",req.file);
+  console.info("AVC",req.body.password);
   const { password } = req.body;
   const imageBuffer = req.file.buffer;
-
+console.info("into encryptimg api 2");
   const key = crypto.createHash('sha256').update(password).digest(); // Derive key
   const iv = crypto.randomBytes(16);
+  console.info("into encryptimg api 3");
   const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
   const encrypted = Buffer.concat([cipher.update(imageBuffer), cipher.final()]);
-
+console.info("into encryptimg api 4");
   const image = new EncryptedImage({
     data: encrypted,
     iv: iv.toString('hex'),
