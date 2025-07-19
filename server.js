@@ -16,6 +16,7 @@ app.use(express.json());
 
 // code to test mongoose connection
 
+
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
@@ -221,3 +222,14 @@ console.info("into encryptimg api 4");
  
 
 //////////////////////////////////////
+
+// check mongo connectoion
+
+app.get('/test-mongo', async (req, res) => {
+  try {
+    await mongoose.connection.db.admin().ping();
+    res.send('✅ MongoDB is connected');
+  } catch (err) {
+    res.status(500).send('❌ MongoDB connection failed');
+  }
+});
