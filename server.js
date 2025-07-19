@@ -136,3 +136,61 @@ app.get("/api/message/:id", async (req, res) => {
   }
 });
 
+////////////////////////////adding file code
+
+
+
+// ------------------- Image Encryption Dependencies -------------------
+const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
+const { Readable } = require('stream');
+
+// Image upload
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
+// MongoDB model
+const ImageSchema = new mongoose.Schema({
+  data: Buffer,
+  iv: String,
+  keyHash: String,
+});
+const EncryptedImage = mongoose.model('EncryptedImage', ImageSchema);
+
+// ------------------- Image Encryption API -------------------
+app.post('/api/encrypt-image', upload.single('image'), async (req, res) => {
+  const { password } = req.body;
+  const imageBuffer = req.file.buffer;
+
+  const key = crypto.createHash('sha256').update(password).digest(); // Derive key
+  const iv = crypto.randomBytes(16);
+  const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+  const encrypted = Buffer.concat([cipher.update(imageBuffer), cipher.final()]);
+
+  const image = new EncryptedImage({
+    data: encrypted,
+    iv: iv.toString('hex'),
+    keyHash: crypto.createHash('sha256').update(password).digest('hex'),
+  });
+
+  const saved = await image.save();
+  res.json({ id: saved._id });
+});
+
+// ------------------- Image Decryption API -------------------
+app.get('/api/decrypt-image/:id', async (req, res) => {
+  const { key } = req.query;
+  const imgDoc = await EncryptedImage.findById(req.params.id);
+  if (!imgDoc) return res.status(404).send('Image not found');
+
+  const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+  if (keyHash !== imgDoc.keyHash) return res.status(401).send('Invalid key');
+
+  const iv = Buffer.from(imgDoc.iv, 'hex');
+  const decipher = crypto.createDecipheriv('aes-256-cbc', crypto.createHash('sha256').update(key).digest(), iv);
+  const decrypted = Buffer.concat([decipher.update(imgDoc.data), decipher.final()]);
+
+  res.contentType('image/png');
+  res.send(decrypted);
+});
