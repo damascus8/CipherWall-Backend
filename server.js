@@ -10,6 +10,24 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+
+
+
+
+// code to test mongoose connection
+
+mongoose.connect(process.env.MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+})
+.then(() => console.log('✅ MongoDB Connected'))
+.catch((err) => console.error('❌ MongoDB Error:', err));
+
+
+
+
+
+
 const client = new MongoClient(process.env.MONGO_URI);
 let db;
 
@@ -203,11 +221,3 @@ console.info("into encryptimg api 4");
  
 
 //////////////////////////////////////
-// code to test mongo connection
-
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => console.log('✅ MongoDB Connected'))
-.catch((err) => console.error('❌ MongoDB Error:', err));
