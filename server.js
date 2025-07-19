@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const mongoose = require("mongoose");
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const CryptoJS = require("crypto-js");
