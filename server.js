@@ -140,7 +140,7 @@ app.get("/api/message/:id", async (req, res) => {
 ////////////////////////////adding file code
 
 
-/*
+
 // ------------------- Image Encryption Dependencies -------------------
 const mongoose = require("mongoose");
 const crypto = require('crypto');
@@ -184,20 +184,20 @@ console.info("into encryptimg api 4");
   res.json({ id: saved._id });
 });
 
-// ------------------- Image Decryption API -------------------
-app.get('/api/decrypt-image/:id', async (req, res) => {
-  const { key } = req.query;
-  const imgDoc = await EncryptedImage.findById(req.params.id);
-  if (!imgDoc) return res.status(404).send('Image not found');
+// // ------------------- Image Decryption API -------------------
+// app.get('/api/decrypt-image/:id', async (req, res) => {
+//   const { key } = req.query;
+//   const imgDoc = await EncryptedImage.findById(req.params.id);
+//   if (!imgDoc) return res.status(404).send('Image not found');
 
-  const keyHash = crypto.createHash('sha256').update(key).digest('hex');
-  if (keyHash !== imgDoc.keyHash) return res.status(401).send('Invalid key');
+//   const keyHash = crypto.createHash('sha256').update(key).digest('hex');
+//   if (keyHash !== imgDoc.keyHash) return res.status(401).send('Invalid key');
 
-  const iv = Buffer.from(imgDoc.iv, 'hex');
-  const decipher = crypto.createDecipheriv('aes-256-cbc', crypto.createHash('sha256').update(key).digest(), iv);
-  const decrypted = Buffer.concat([decipher.update(imgDoc.data), decipher.final()]);
+//   const iv = Buffer.from(imgDoc.iv, 'hex');
+//   const decipher = crypto.createDecipheriv('aes-256-cbc', crypto.createHash('sha256').update(key).digest(), iv);
+//   const decrypted = Buffer.concat([decipher.update(imgDoc.data), decipher.final()]);
 
-  res.contentType('image/png');
-  res.send(decrypted);
-});
- */
+//   res.contentType('image/png');
+//   res.send(decrypted);
+// });
+ 
