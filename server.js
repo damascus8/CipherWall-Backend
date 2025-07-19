@@ -124,20 +124,6 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Listening on port ${PORT}`));
 
 
-// app.get("/api/message/:id", async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const record = await db.collection("messages").findOne({ _id: new ObjectId(id) });
-//     console.log("record"+record);
-//     if (!record) return res.status(404).json({ error: "Message not found" });
-
-//     res.json({ payload: record.payload, type: record.type });
-//   } catch (err) {
-//     res.status(500).json({ error: "Failed to retrieve message" });
-//   }
-// });
-//
-
 
 // Fetch endpoint – returns doc
 app.get("/api/message/:id", async (req, res) => {
@@ -150,55 +136,3 @@ app.get("/api/message/:id", async (req, res) => {
   }
 });
 
-
-
-// Mongo Schema
-const ImageSchema = new mongoose.Schema({
-  encryptedData: Buffer,
-  iv: [Number],
-  createdAt: { type: Date, default: Date.now }
-});
-const EncryptedImage = mongoose.model('EncryptedImage', ImageSchema);
-
-// Upload endpoint
-app.post('/api/upload-image', async (req, res) => {
-  const { data, password } = req.body;
-  const buffer = Buffer.from(data.encrypted);
-  const newImg = new EncryptedImage({
-    encryptedData: buffer,
-    iv: data.iv
-  });
-  await newImg.save();
-  res.json({ success: true, id: newImg._id });
-});
-
-// View/decrypt endpoint
-app.post('/api/view-image', async (req, res) => {
-  const { id, password } = req.body;
-  const record = await EncryptedImage.findById(id);
-  if (!record) return res.status(404).send('Not found');
-
-  try {
-    const key = await crypto.subtle.importKey(
-      "raw",
-      new TextEncoder().encode(password),
-      { name: "AES-GCM" },
-      false,
-      ["decrypt"]
-    );
-
-    const decrypted = await crypto.subtle.decrypt(
-      {
-        name: "AES-GCM",
-        iv: new Uint8Array(record.iv)
-      },
-      key,
-      record.encryptedData.buffer
-    );
-
-    res.set('Content-Type', 'image/jpeg'); // or png if png uploaded
-    res.send(Buffer.from(decrypted));
-  } catch (e) {
-    res.status(401).send("Decryption failed");
-  }
-});
