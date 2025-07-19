@@ -1,6 +1,6 @@
 require("dotenv").config();
 const express = require("express");
-
+const mongoose = require("mongoose");
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const CryptoJS = require("crypto-js");
@@ -9,9 +9,6 @@ const bcrypt = require("bcrypt");
 const app = express();
 app.use(cors());
 app.use(express.json());
-
-
-
 
 
 // code to test mongoose connection
@@ -23,7 +20,8 @@ mongoose.connect(process.env.MONGO_URI, {
 })
 .then(() => console.log('✅ MongoDB Connected'))
 .catch((err) => console.error('❌ MongoDB Error:', err));
-
+//
+//remove above line if dont work
 
 
 
@@ -161,7 +159,7 @@ app.get("/api/message/:id", async (req, res) => {
 
 
 // ------------------- Image Encryption Dependencies -------------------
-const mongoose = require("mongoose");
+
 const crypto = require('crypto');
 const multer = require('multer');
 const path = require('path');
