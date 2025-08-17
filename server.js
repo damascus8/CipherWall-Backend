@@ -1,3 +1,5 @@
+const { initFirebaseAdminFromEnv, authenticate } = require("./auth-middleware");
+
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -7,9 +9,17 @@ const CryptoJS = require("crypto-js");
 const bcrypt = require("bcrypt");
 
 const app = express();
+
+
+//// ✅ Initialize Firebase Admin from env
+initFirebaseAdminFromEnv();
+
+
 app.use(cors());
 app.use(express.json());
 
+// ✅ Protect all /api routes
+app.use("/api", authenticate);
 
 // code to test mongoose connection
 
@@ -90,21 +100,6 @@ app.post("/api/decrypt", async (req, res) => {
       const bytes = CryptoJS.AES.decrypt(doc.payload, key);
       decrypted = bytes.toString(CryptoJS.enc.Utf8);
     }
-    // Caesar decryption
-    
-    // else if (doc.type === "caesar") {
-
-
-    //   const shift = parseInt(key);
-    //   decrypted = doc.payload
-    //     .split("")
-    //     .map(c => {
-    //       const base = c >= "a" && c <= "z" ? 97 : 65;
-    //       return String.fromCharCode((c.charCodeAt(0) - base - shift + 26) % 26 + base);
-    //     })
-    //     .join("");
-    
-    //   }
 
 
 else if (doc.type === "caesar") {
