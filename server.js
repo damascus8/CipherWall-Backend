@@ -18,6 +18,23 @@ initFirebaseAdminFromEnv();
 app.use(cors());
 app.use(express.json());
 
+
+
+
+app.post("/login", async (req, res) => {
+  const { idToken } = req.body; // client sends Firebase ID token
+  if (!idToken) return res.status(400).json({ error: "No token provided" });
+
+  try {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    // optional: create/update user in MongoDB if you want
+    res.json({ token: idToken, email: decoded.email, uid: decoded.uid });
+  } catch (err) {
+    console.error("❌ Firebase login failed", err.message);
+    res.status(401).json({ error: "Invalid token" });
+  }
+});
+
 // ✅ Protect all /api routes
 app.use("/api", authenticate);
 
@@ -46,6 +63,8 @@ client.connect().then(() => {
   coll.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 });
   console.log("✅ Connected & TTL index set");
 });
+
+
 
 // Save endpoint – hashes key if provided (AES/Caesar)
 app.post("/api/save", async (req, res) => {
