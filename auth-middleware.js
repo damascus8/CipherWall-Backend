@@ -41,14 +41,14 @@ let initialized = false;
 function initFirebaseAdminFromEnv() {
   if (initialized) return;
 
-  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_JSON; // updated env name
-  if (!raw) throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_JSON in env");
+  const raw = process.env.FIREBASE_SERVICE_ACCOUNT_KEY; // updated env name
+  if (!raw) throw new Error("Missing FIREBASE_SERVICE_ACCOUNT_KEY in env");
 
   let serviceAccount;
   try {
     serviceAccount = JSON.parse(raw);
   } catch (err) {
-    throw new Error("Invalid JSON in FIREBASE_SERVICE_ACCOUNT_JSON");
+    throw new Error("Invalid JSON in FIREBASE_SERVICE_ACCOUNT_KEY");
   }
 
   admin.initializeApp({
