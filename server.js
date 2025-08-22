@@ -21,7 +21,7 @@ app.use(express.json());
 
 
 
-app.post("/login", async (req, res) => {
+app.post("/api/login", async (req, res) => {
   const { idToken } = req.body; // client sends Firebase ID token
   if (!idToken) return res.status(400).json({ error: "No token provided" });
 
