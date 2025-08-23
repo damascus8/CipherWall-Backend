@@ -1,4 +1,8 @@
+const fetch = require("node-fetch"); // add at top
 const { initFirebaseAdminFromEnv, authenticate } = require("./auth-middleware");
+const admin = require("./firebase-admin"); // you already have this file
+
+
 
 require("dotenv").config();
 const express = require("express");
@@ -21,19 +25,94 @@ app.use(express.json());
 
 
 
-app.post("/api/login", async (req, res) => {
-  const { idToken } = req.body; // client sends Firebase ID token
-  if (!idToken) return res.status(400).json({ error: "No token provided" });
 
+
+
+// sss
+// Signup (email/password)
+// app.post("/api/signup", async (req, res) => {
+//   const { email, password } = req.body;
+//   if (!email || !password) return res.status(400).json({ error: "Missing email or password" });
+
+//   try {
+//     const user = await admin.auth().createUser({ email, password });
+//     const token = await admin.auth().createCustomToken(user.uid);
+//     res.json({ token });
+//   } catch (err) {
+//     console.error("❌ Signup failed:", err.message);
+//     res.status(400).json({ error: err.message });
+//   }
+// });
+// Signup route
+app.post("/api/signup", async (req, res) => {
   try {
-    const decoded = await admin.auth().verifyIdToken(idToken);
-    // optional: create/update user in MongoDB if you want
-    res.json({ token: idToken, email: decoded.email, uid: decoded.uid });
+    const { email, password } = req.body;
+
+    // 1. Create the user
+    const user = await admin.auth().createUser({ email, password });
+
+    // 2. Call Firebase REST API to get an ID token (same as /api/login)
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          password,
+          returnSecureToken: true,
+        }),
+      }
+    );
+
+    const data = await response.json();
+
+    if (data.error) {
+      console.error("Firebase signup token error:", data.error);
+      return res.status(400).json({ error: data.error.message });
+    }
+
+    // 3. Send the idToken back to client
+    res.json({ token: data.idToken });
   } catch (err) {
-    console.error("❌ Firebase login failed", err.message);
-    res.status(401).json({ error: "Invalid token" });
+    console.error("Signup error:", err);
+    res.status(500).json({ error: err.message });
   }
 });
+
+
+
+
+
+// Login (verify password via Firebase)
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+  if (!email || !password) return res.status(400).json({ error: "Missing email or password" });
+
+  try {
+    // Firebase Admin SDK can't verify password directly.
+    // Best: use Firebase REST API for signInWithPassword here
+    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true })
+    });
+    const data = await response.json();
+    if (data.error) throw new Error(data.error.message);
+
+    res.json({ token: data.idToken });
+  } catch (err) {
+    console.error("❌ Login failed:", err.message);
+    res.status(401).json({ error: err.message });
+  }
+});
+
+//ssssssssss
+
+
+
+
+
 
 // ✅ Protect all /api routes
 app.use("/api", authenticate);
