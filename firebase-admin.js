@@ -1,10 +1,10 @@
-const admin = require("firebase-admin");
-require("dotenv").config();
+// const admin = require("firebase-admin");
+// require("dotenv").config();
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
+// const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_KEY);
 
-admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount)
-});
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount)
+// });
 
-module.exports = admin;
+// module.exports = admin;

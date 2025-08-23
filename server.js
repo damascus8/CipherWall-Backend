@@ -1,9 +1,4 @@
-const fetch = require("node-fetch"); // add at top
-const { initFirebaseAdminFromEnv, authenticate } = require("./auth-middleware");
-const admin = require("./firebase-admin"); // you already have this file
-
-
-
+// server.js
 require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
@@ -11,92 +6,67 @@ const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 const CryptoJS = require("crypto-js");
 const bcrypt = require("bcrypt");
+const fetch = require("node-fetch");
+
+const { initFirebaseAdminFromEnv, authenticate, admin } = require("./auth-middleware");
 
 const app = express();
 
-
-//// ✅ Initialize Firebase Admin from env
+// ✅ Initialize Firebase Admin once
 initFirebaseAdminFromEnv();
-
 
 app.use(cors());
 app.use(express.json());
 
+// ------------------- AUTH ROUTES -------------------
 
-
-
-
-
-
-// sss
-// Signup (email/password)
-// app.post("/api/signup", async (req, res) => {
-//   const { email, password } = req.body;
-//   if (!email || !password) return res.status(400).json({ error: "Missing email or password" });
-
-//   try {
-//     const user = await admin.auth().createUser({ email, password });
-//     const token = await admin.auth().createCustomToken(user.uid);
-//     res.json({ token });
-//   } catch (err) {
-//     console.error("❌ Signup failed:", err.message);
-//     res.status(400).json({ error: err.message });
-//   }
-// });
-// Signup route
+// Signup
 app.post("/api/signup", async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // 1. Create the user
-    const user = await admin.auth().createUser({ email, password });
+    // Create Firebase user
+    await admin.auth().createUser({ email, password });
 
-    // 2. Call Firebase REST API to get an ID token (same as /api/login)
+    // Get token using Firebase REST API
     const response = await fetch(
       `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          password,
-          returnSecureToken: true,
-        }),
+        body: JSON.stringify({ email, password, returnSecureToken: true }),
       }
     );
 
     const data = await response.json();
-
     if (data.error) {
       console.error("Firebase signup token error:", data.error);
       return res.status(400).json({ error: data.error.message });
     }
 
-    // 3. Send the idToken back to client
     res.json({ token: data.idToken });
   } catch (err) {
-    console.error("Signup error:", err);
+    console.error("❌ Signup error:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-
-
-
-
-// Login (verify password via Firebase)
+// Login
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: "Missing email or password" });
+  if (!email || !password)
+    return res.status(400).json({ error: "Missing email or password" });
 
   try {
-    // Firebase Admin SDK can't verify password directly.
-    // Best: use Firebase REST API for signInWithPassword here
-    const response = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, returnSecureToken: true })
-    });
+    const response = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${process.env.FIREBASE_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, returnSecureToken: true }),
+      }
+    );
+
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
 
@@ -107,14 +77,7 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-//ssssssssss
-
-
-
-
-
-
-// ✅ Protect all /api routes
+// ✅ Protect all /api routes after login/signup
 app.use("/api", authenticate);
 
 // code to test mongoose connection
