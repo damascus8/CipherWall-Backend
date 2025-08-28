@@ -51,7 +51,7 @@ app.post("/api/signup", async (req, res) => {
 
 
 
-
+    console.log("priniting data var ",data)
        // Set token in cookie
     res.cookie('authToken', data.idToken, {
       httpOnly: true,
@@ -62,7 +62,7 @@ app.post("/api/signup", async (req, res) => {
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
 ////////////////adding cookie
-
+      console.log("✅ testing token on login", data.idToken);
     // res.json({ token: data.idToken });
       res.json({ success: true });
   } catch (err) {
