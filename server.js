@@ -44,6 +44,30 @@ app.post("/api/signup", async (req, res) => {
       return res.status(400).json({ error: data.error.message });
     }
 
+
+
+
+       // Set token in cookie
+    res.cookie('authToken', data.idToken, {
+      httpOnly: true,
+      secure: true, // set to true if using HTTPS
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+////////////////adding cookie
+
+
+
+
+
+
+
+
+
+
+
+
     res.json({ token: data.idToken });
   } catch (err) {
     console.error("❌ Signup error:", err.message);
@@ -69,6 +93,19 @@ app.post("/api/login", async (req, res) => {
 
     const data = await response.json();
     if (data.error) throw new Error(data.error.message);
+
+
+  // Set token in cookie
+    res.cookie('authToken', data.idToken, {
+      httpOnly: true,
+      secure: true, // set to true if using HTTPS
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60 * 1000 // 1 day
+    });
+    ///cookie code above
+
+
 
     res.json({ token: data.idToken });
   } catch (err) {
@@ -210,7 +247,7 @@ app.get("/api/message/:id", async (req, res) => {
   }
 });
 
-////////////////////////////adding file code
+/////adding file code
 
 
 
