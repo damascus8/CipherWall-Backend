@@ -18,6 +18,11 @@ initFirebaseAdminFromEnv();
 app.use(cors());
 app.use(express.json());
 
+app.use(cors({
+  origin: "https://cipher-wall-gflf5qcvp-thesiddharthshrivastav.vercel.app/", // your frontend
+  credentials: true, // <--- allow cookies
+}));
+
 // ------------------- AUTH ROUTES -------------------
 
 // Signup
