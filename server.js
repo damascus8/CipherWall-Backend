@@ -56,22 +56,12 @@ app.post("/api/signup", async (req, res) => {
     res.cookie('authToken', data.idToken, {
       httpOnly: true,
       secure: true, // set to true if using HTTPS
-      sameSite: 'lax',
+      // sameSite: 'lax',
+    sameSite: 'None',
       path: '/',
       maxAge: 24 * 60 * 60 * 1000 // 1 day
     });
 ////////////////adding cookie
-
-
-
-
-
-
-
-
-
-
-
 
     res.json({ token: data.idToken });
   } catch (err) {
