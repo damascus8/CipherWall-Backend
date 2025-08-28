@@ -18,10 +18,10 @@ initFirebaseAdminFromEnv();
 app.use(cors());
 app.use(express.json());
 
-app.use(cors({
-  origin: "https://cipher-wall-gflf5qcvp-thesiddharthshrivastav.vercel.app", // your frontend
-  credentials: true, // <--- allow cookies
-}));
+// app.use(cors({
+//   origin: "https://cipher-wall-gflf5qcvp-thesiddharthshrivastav.vercel.app", // your frontend
+//   credentials: true, // <--- allow cookies
+// }));
 
 // ------------------- AUTH ROUTES -------------------
 
@@ -51,20 +51,24 @@ app.post("/api/signup", async (req, res) => {
 
 
 
-    console.log("priniting data var ",data)
-       // Set token in cookie
-    res.cookie('authToken', data.idToken, {
-      httpOnly: true,
-      secure: true, // set to true if using HTTPS
-      // sameSite: 'lax',
-    sameSite: 'None',
-      path: '/',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
+    // console.log("priniting data var ",data)
+    //    // Set token in cookie
+    // res.cookie('authToken', data.idToken, {
+    //   httpOnly: true,
+    //   secure: true, // set to true if using HTTPS
+    //   // sameSite: 'lax',
+    // sameSite: 'None',
+    //   path: '/',
+    //   maxAge: 24 * 60 * 60 * 1000 // 1 day
+    // });
 ////////////////adding cookie
-      console.log("✅ testing token on login", data.idToken);
-    // res.json({ token: data.idToken });
-      res.json({ success: true });
+      // console.log("✅ testing token on login", data.idToken);
+   
+   
+      res.json({ token: data.idToken });
+   
+   
+      // res.json({ success: true });
   } catch (err) {
     console.error("❌ Signup error:", err.message);
     res.status(500).json({ error: err.message });
@@ -91,15 +95,15 @@ app.post("/api/login", async (req, res) => {
     if (data.error) throw new Error(data.error.message);
 
 
-  // Set token in cookie
-    res.cookie('authToken', data.idToken, {
-      httpOnly: true,
-      secure: true, // set to true if using HTTPS
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 24 * 60 * 60 * 1000 // 1 day
-    });
-    ///cookie code above
+  // // Set token in cookie
+  //   res.cookie('authToken', data.idToken, {
+  //     httpOnly: true,
+  //     secure: true, // set to true if using HTTPS
+  //     sameSite: 'lax',
+  //     path: '/',
+  //     maxAge: 24 * 60 * 60 * 1000 // 1 day
+  //   });
+  //   ///cookie code above
 
 
 
