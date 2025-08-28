@@ -63,7 +63,8 @@ app.post("/api/signup", async (req, res) => {
     });
 ////////////////adding cookie
 
-    res.json({ token: data.idToken });
+    // res.json({ token: data.idToken });
+      res.json({ success: true });
   } catch (err) {
     console.error("❌ Signup error:", err.message);
     res.status(500).json({ error: err.message });
